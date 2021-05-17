@@ -9,8 +9,25 @@ import SwiftUI
 import AVKit
 
 
-class HomeModel: ObservableObject {
+class HomeModel: NSObject, ObservableObject {
+    
     @Published var player = AVPlayer(url: URL(fileURLWithPath: Bundle.main.path(forResource: "video", ofType: "mp4")!))
+    
+    override init() {
+        super.init()
+        player.actionAtItemEnd = .none
+        NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd(notification:)), name: .AVPlayerItemDidPlayToEndTime, object: player.currentItem)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func playerItemDidReachEnd(notification: Notification) {
+        if let playerItem = notification.object as? AVPlayerItem {
+            playerItem.seek(to: CMTime.zero, completionHandler: nil)
+        }
+    }
 }
 
 struct Home: View {
@@ -21,7 +38,7 @@ struct Home: View {
         
         GeometryReader { proxy in
             
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 30) {
                 
                 Text("Quick Help")
                     .fontWeight(.heavy)
@@ -55,7 +72,7 @@ struct Home: View {
                                 .frame(maxWidth: 70, maxHeight: 70)
                                 .background(Color.white
                                                 .cornerRadius(15)
-                                                .shadow(color: Color.gray.opacity(0.3), radius: 15))
+                                                .shadow(color: Color.gray.opacity(0.3), radius: 5))
                             Text("Views")
                                 .font(.footnote)
                                 .foregroundColor(.black)
@@ -93,7 +110,7 @@ struct Home: View {
                                 .frame(maxWidth: 70, maxHeight: 70)
                                 .background(Color.white
                                                 .cornerRadius(15)
-                                                .shadow(color: Color.gray.opacity(0.3), radius: 15))
+                                                .shadow(color: Color.gray.opacity(0.3), radius: 5))
                             Text("Games")
                                 .font(.footnote)
                                 .foregroundColor(.black)
@@ -136,22 +153,63 @@ struct Home: View {
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     
-                    HStack {
+                    HStack(spacing: 20) {
                         
-                        
+                        ForEach(array, id: \.self) { item in
+                            
+                                Image(item.image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 200, alignment: .topLeading)
+                                    .clipped()
+                                    .overlay(VStack(alignment: .leading, spacing: 5) {
+                                        
+                                        Text(item.title)
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                        
+                                        HStack {
+                                            
+                                            Image(systemName: "clock")
+                                            
+                                            Text(item.duration)
+                                            
+                                            Spacer()
+                                        }
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                    }
+                                    .padding(10)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.white)
+                                    , alignment: .bottom)
+                                
+                            .cornerRadius(15)
+                            .background(Color.white
+                                            .cornerRadius(15)
+                                            .shadow(color: Color.gray.opacity(0.3), radius: 5))
+                        }
                     }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
                 }
+                .padding(.horizontal, -20)
             }
-            .padding()
+            .padding(20)
             .onAppear {
                 data.player.play()
             }
+            .overlay(Button(action:{}, label:{
+                Image(systemName:"magnifyingglass")
+                    .font(.title3)
+                    .foregroundColor(.black)
+            }).padding(), alignment: .topTrailing)
         }
     }
 }
 
 struct Home_Previews: PreviewProvider {
     static var previews: some View {
-        Home()
+        ContentView()
     }
 }
